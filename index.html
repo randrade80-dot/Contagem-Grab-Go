@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Controle da Geladeira</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#1f6f86">
+<style>
+:root{--bg:#f2f6f7;--card:#fff;--tx:#14262d;--mut:#5f7480;--pri:#1f6f86;--pt:#fff;--bd:#d3dfe3;--ok:#17703f;--okb:#dcf2e4;--bad:#a8231b;--badb:#fbe1de;--inp:#fff8cc;--sel:#e1eef2;color-scheme:light;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1c21;--card:#182a31;--tx:#e8f1f4;--mut:#9bb1ba;--pri:#5cb8d0;--pt:#08181d;--bd:#2b434c;--ok:#7fdca5;--okb:#17382a;--bad:#ff9a91;--badb:#44201d;--inp:#3a3817;--sel:#223c45;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1c21;--card:#182a31;--tx:#e8f1f4;--mut:#9bb1ba;--pri:#5cb8d0;--pt:#08181d;--bd:#2b434c;--ok:#7fdca5;--okb:#17382a;--bad:#ff9a91;--badb:#44201d;--inp:#3a3817;--sel:#223c45;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 Arial,Helvetica,sans-serif;max-width:640px;margin-inline:auto;padding:0 12px 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+h1{font-size:20px;margin:14px 0 2px}
+.sub{color:var(--mut);font-size:13px;margin:0 0 10px}
+nav{display:flex;gap:6px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:6px 0;z-index:5}
+nav button,.seg button{flex:1;padding:11px 6px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:600 15px Arial,sans-serif}
+nav button.on,.seg button.on{background:var(--pri);color:var(--pt);border-color:var(--pri)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:10px 0}
+.seg{display:flex;gap:6px;margin-top:10px}
+label{font-size:13px;color:var(--mut);display:block;margin-bottom:4px}
+input[type=date],input[type=text]{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:16px Arial,sans-serif}
+.sum{display:flex;gap:8px;text-align:center}
+.sum div{flex:1;background:var(--sel);border-radius:10px;padding:8px 4px}
+.sum b{display:block;font-size:22px}.sum span{font-size:12px;color:var(--mut)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.row:last-child{border-bottom:0}
+.nm{flex:1;min-width:0;font-weight:600}
+.nm small{display:block;font-weight:400;color:var(--mut);font-size:12px;margin-top:2px}
+.tag{display:inline-block;padding:1px 7px;border-radius:8px;font-size:12px;font-weight:700;margin-left:4px}
+.tag.ok{background:var(--okb);color:var(--ok)}.tag.bad{background:var(--badb);color:var(--bad)}
+.st{display:flex;align-items:center;gap:6px}
+.st button{width:44px;height:44px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:700 22px Arial,sans-serif}
+.st input{width:58px;height:44px;text-align:center;border:1px solid var(--bd);border-radius:10px;background:var(--inp);color:var(--tx);font:700 20px Arial,sans-serif}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:6px 4px;border-bottom:1px solid var(--bd);text-align:center}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mut);font-size:12px}
+details{border-bottom:1px solid var(--bd);padding:8px 0}
+summary{font-weight:700;cursor:pointer}
+.btn{width:100%;padding:12px;border:0;border-radius:10px;background:var(--pri);color:var(--pt);font:700 15px Arial,sans-serif;margin-top:8px}
+.btn.alt{background:var(--sel);color:var(--tx)}
+.del{width:auto;padding:0 12px;font-size:13px!important;color:var(--bad)!important}
+.pr{display:flex;gap:6px;align-items:center;padding:6px 0}
+.pr input{flex:1;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:16px Arial,sans-serif}
+.empty{color:var(--mut);text-align:center;padding:16px 0}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<h1>🧊 Controle da Geladeira</h1>
+<p class="sub">Conte à noite, conte de manhã, veja o que saiu.</p>
+<nav id="nav"></nav>
+<div id="app"></div>
+<div id="toast"></div>
+<script>
+const KEY='geladeira.v1';
+const SEED=['Coca-Cola Original lata','Coca-Cola Zero lata','Guaraná Antarctica lata','Água Pouso Alto (tampa verde)','Água Pouso Alto (tampa azul)','H2O! (tampa verde)','H2OH! (tampa azul-claro)','Matte Leão copo','Guaravita copo','Garrafa tampa amarela','Garrafa tampa azul','Salada de frutas pote','Mousse pote','Torta/cheesecake pote','Doce de leite/creme pote'];
+let S=null;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
+if(!S||!Array.isArray(S.products)){S={products:SEED.map((n,i)=>({id:'p'+i,name:n})),days:{}}}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const br=i=>i.split('-').reverse().join('/').slice(0,5);
+const wd=i=>['dom','seg','ter','qua','qui','sex','sáb'][new Date(i+'T12:00:00').getDay()];
+const lab=i=>'Noite de '+wd(i)+' '+br(i);
+const now=new Date(),h=now.getHours(),yest=new Date(now);yest.setDate(now.getDate()-1);
+let ui={tab:'c',mode:h<12?'m':'n',cy:iso(h<12?yest:now),conf:null};
+const get=(c,id,k)=>{const d=S.days[c];return d&&d[id]&&d[id][k]!==undefined?d[id][k]:undefined};
+function set(c,id,k,v){S.days[c]=S.days[c]||{};S.days[c][id]=S.days[c][id]||{};if(v===undefined)delete S.days[c][id][k];else S.days[c][id][k]=v;save()}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800)}
+
+function vCount(){
+  const act=S.products.filter(p=>!p.off);let tn=0,tm=0,ts=0,bad=0;
+  const rows=act.map(p=>{
+    const n=get(ui.cy,p.id,'n'),m=get(ui.cy,p.id,'m'),cur=ui.mode==='n'?n:m;
+    if(n!==undefined)tn+=n;if(m!==undefined)tm+=m;
+    let tag='';
+    if(n!==undefined&&m!==undefined){const d=n-m;if(d<0){bad++;tag='<span class="tag bad">conferir</span>'}else{ts+=d;tag='<span class="tag ok">saiu '+d+'</span>'}}
+    const info=(n!==undefined?'Noite '+n:'Noite –')+' · '+(m!==undefined?'Manhã '+m:'Manhã –');
+    return '<div class="row"><div class="nm">'+esc(p.name)+'<small>'+info+tag+'</small></div><div class="st"><button data-a="dec" data-id="'+p.id+'" aria-label="menos">−</button><input type="number" inputmode="numeric" min="0" placeholder="–" data-a="inp" data-id="'+p.id+'" value="'+(cur===undefined?'':cur)+'"><button data-a="inc" data-id="'+p.id+'" aria-label="mais">+</button></div></div>';
+  }).join('');
+  return '<div class="card"><label for="cy">Contagem da noite de</label><input type="date" id="cy" value="'+ui.cy+'"><div class="seg"><button data-a="mode" data-m="n" class="'+(ui.mode==='n'?'on':'')+'">🌙 Noite (ao sair)</button><button data-a="mode" data-m="m" class="'+(ui.mode==='m'?'on':'')+'">☀️ Manhã (ao chegar)</button></div></div>'
+   +'<div class="card sum"><div><b>'+tn+'</b><span>Noite</span></div><div><b>'+tm+'</b><span>Manhã</span></div><div><b>'+ts+'</b><span>Saiu</span></div></div>'
+   +(bad?'<div class="card" style="color:var(--bad)">'+bad+' produto(s) com manhã maior que noite: confira a contagem.</div>':'')
+   +'<div class="card">'+(rows||'<div class="empty">Nenhum produto. Cadastre na aba Produtos.</div>')+'</div>';
+}
+
+function cycles(){return Object.keys(S.days).filter(c=>Object.values(S.days[c]).some(o=>Object.keys(o).length)).sort().reverse()}
+function vHist(){
+  const cs=cycles();if(!cs.length)return '<div class="card empty">Ainda não há contagens. Comece pela aba Contagem.</div>';
+  const agg={};
+  const list=cs.map(c=>{
+    let tot=0;const rows=S.products.map(p=>{
+      const n=get(c,p.id,'n'),m=get(c,p.id,'m');if(n===undefined&&m===undefined)return '';
+      let s='–';if(n!==undefined&&m!==undefined){const d=n-m;s=d<0?'conferir':d;if(d>=0){tot+=d;const a=agg[p.id]=agg[p.id]||{t:0,d:0};a.t+=d;a.d++}}
+      return '<tr><td>'+esc(p.name)+'</td><td>'+(n===undefined?'–':n)+'</td><td>'+(m===undefined?'–':m)+'</td><td><b>'+s+'</b></td></tr>';
+    }).join('');
+    return '<details><summary>'+lab(c)+' · saiu '+tot+'</summary><table><tr><th>Produto</th><th>Noite</th><th>Manhã</th><th>Saiu</th></tr>'+rows+'</table></details>';
+  }).join('');
+  const res=S.products.filter(p=>agg[p.id]).sort((a,b)=>agg[b.id].t-agg[a.id].t).map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+agg[p.id].d+'</td><td><b>'+agg[p.id].t+'</b></td><td>'+(agg[p.id].t/agg[p.id].d).toFixed(1).replace('.',',')+'</td></tr>').join('');
+  return '<div class="card"><b>Resumo por produto</b><table><tr><th>Produto</th><th>Dias</th><th>Total saiu</th><th>Média/dia</th></tr>'+(res||'<tr><td colspan="4" class="empty">Conte noite e manhã para ver o resumo.</td></tr>')+'</table></div>'
+   +'<div class="card"><b>Dia a dia</b>'+list+'<button class="btn alt" data-a="csv">Copiar histórico (CSV)</button></div>';
+}
+
+function vProd(){
+  const rows=S.products.filter(p=>!p.off).map(p=>'<div class="pr"><input type="text" data-a="ren" data-id="'+p.id+'" value="'+esc(p.name)+'"><button class="st del" style="height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--card)" data-a="rm" data-id="'+p.id+'">'+(ui.conf===p.id?'Tem certeza?':'Remover')+'</button></div>').join('');
+  return '<div class="card"><b>Produtos da geladeira</b><p class="sub">Toque no nome para editar. Produtos removidos continuam no histórico.</p>'+rows
+   +'<div class="pr"><input type="text" id="newp" placeholder="Novo produto"><button class="btn" style="width:auto;margin:0;padding:12px 16px" data-a="add">Adicionar</button></div></div>';
+}
+
+function render(){
+  $('#nav').innerHTML=[['c','Contagem'],['h','Histórico'],['p','Produtos']].map(t=>'<button data-a="tab" data-t="'+t[0]+'" class="'+(ui.tab===t[0]?'on':'')+'">'+t[1]+'</button>').join('');
+  $('#app').innerHTML=ui.tab==='c'?vCount():ui.tab==='h'?vHist():vProd();
+}
+function csv(){
+  const L=['data_da_noite;produto;noite;manhã;saiu'];
+  cycles().slice().reverse().forEach(c=>S.products.forEach(p=>{const n=get(c,p.id,'n'),m=get(c,p.id,'m');if(n===undefined&&m===undefined)return;L.push([c,p.name,n??'',m??'',(n!==undefined&&m!==undefined)?n-m:''].join(';'))}));
+  return L.join('\n');
+}
+function copy(t){
+  try{navigator.clipboard.writeText(t).then(()=>toast('Histórico copiado'),()=>fb(t))}catch(e){fb(t)}
+  function fb(x){try{const a=document.createElement('textarea');a.value=x;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();toast('Histórico copiado')}catch(e){toast('Não foi possível copiar')}}
+}
+function addProd(){
+  const i=$('#newp'),v=i.value.trim();if(!v)return;
+  S.products.push({id:'p'+Date.now(),name:v});save();render();toast('Produto adicionado');
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,id=b.dataset.id;
+  if(a==='tab'){ui.tab=b.dataset.t;ui.conf=null;render()}
+  else if(a==='mode'){ui.mode=b.dataset.m;render()}
+  else if(a==='inc'){const c=get(ui.cy,id,ui.mode);set(ui.cy,id,ui.mode,(c===undefined?0:c)+1);render()}
+  else if(a==='dec'){const c=get(ui.cy,id,ui.mode);set(ui.cy,id,ui.mode,c===undefined?0:Math.max(0,c-1));render()}
+  else if(a==='csv')copy(csv());
+  else if(a==='add')addProd();
+  else if(a==='rm'){if(ui.conf===id){const p=S.products.find(x=>x.id===id);if(p)p.off=true;ui.conf=null;save();render()}else{ui.conf=id;render()}}
+});
+document.addEventListener('change',e=>{
+  const t=e.target,a=t.dataset.a;
+  if(t.id==='cy'){if(t.value){ui.cy=t.value;render()}}
+  else if(a==='inp'){const v=t.value.trim();set(ui.cy,t.dataset.id,ui.mode,v===''?undefined:Math.max(0,Math.floor(+v)||0));render()}
+  else if(a==='ren'){const p=S.products.find(x=>x.id===t.dataset.id),v=t.value.trim();if(p&&v){p.name=v;save()}else if(p)t.value=p.name}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='newp')addProd()});
+render();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>

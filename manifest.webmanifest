@@ -1,0 +1,14 @@
+{
+  "name": "Controle da Geladeira",
+  "short_name": "Geladeira",
+  "description": "Contagem de noite e de manhã dos produtos da geladeira, com a diferença do que saiu.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f6f7",
+  "theme_color": "#1f6f86",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
