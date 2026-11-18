@@ -20,15 +20,15 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 h1{font-size:20px;margin:14px 0 2px}
 .sub{color:var(--mut);font-size:13px;margin:0 0 10px}
 nav{display:flex;gap:6px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:6px 0;z-index:5}
-nav button,.seg button{flex:1;padding:11px 6px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:600 15px Arial,sans-serif}
+nav button,.seg button{flex:1;padding:11px 4px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:600 15px Arial,sans-serif}
 nav button.on,.seg button.on{background:var(--pri);color:var(--pt);border-color:var(--pri)}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:10px 0}
 .seg{display:flex;gap:6px;margin-top:10px}
 label{font-size:13px;color:var(--mut);display:block;margin-bottom:4px}
 input[type=date],input[type=text]{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font:16px Arial,sans-serif}
-.sum{display:flex;gap:8px;text-align:center}
+.sum{display:flex;gap:8px;text-align:center}.sum b{overflow-wrap:anywhere}
 .sum div{flex:1;background:var(--sel);border-radius:10px;padding:8px 4px}
-.sum b{display:block;font-size:22px}.sum span{font-size:12px;color:var(--mut)}
+.sum b{display:block;font-size:20px}.sum span{font-size:12px;color:var(--mut)}
 .row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--bd)}
 .row:last-child{border-bottom:0}
 .nm{flex:1;min-width:0;font-weight:600}
@@ -56,7 +56,7 @@ summary{font-weight:700;cursor:pointer}
 </head>
 <body>
 <h1>🧊 Controle da Geladeira</h1>
-<p class="sub">Conte à noite, conte de manhã, veja o que saiu.</p>
+<p class="sub">Conte à noite, conte de manhã, informe o vendido e veja a perda.</p>
 <nav id="nav"></nav>
 <div id="app"></div>
 <div id="toast"></div>
@@ -66,6 +66,7 @@ const SEED=['Coca-Cola Original lata','Coca-Cola Zero lata','Guaraná Antarctica
 let S=null;
 try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
 if(!S||!Array.isArray(S.products)){S={products:SEED.map((n,i)=>({id:'p'+i,name:n})),days:{}}}
+S.rep=S.rep||{};
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -80,52 +81,84 @@ const get=(c,id,k)=>{const d=S.days[c];return d&&d[id]&&d[id][k]!==undefined?d[i
 function set(c,id,k,v){S.days[c]=S.days[c]||{};S.days[c][id]=S.days[c][id]||{};if(v===undefined)delete S.days[c][id][k];else S.days[c][id][k]=v;save()}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800)}
 
+const money=x=>'R$ '+x.toFixed(2).replace('.',',');
+const pr=p=>p.price||0;
+const f=x=>x===undefined?'–':x;
+function calc(c,p){const r={n:get(c,p.id,'n'),m:get(c,p.id,'m'),v:get(c,p.id,'v')};
+  if(r.n!==undefined&&r.m!==undefined){r.d=r.n-r.m;if(r.d>=0&&r.v!==undefined)r.l=r.d-r.v}
+  return r}
+const HINT={n:'Conte o que tem na geladeira antes de ir embora.',m:'Conte o que tem na geladeira ao chegar.',v:'Quantas unidades foram vendidas (veja no relatório da maquininha ou do sistema).'};
 function vCount(){
-  const act=S.products.filter(p=>!p.off);let tn=0,tm=0,ts=0,bad=0;
+  const act=S.products.filter(p=>!p.off);let T={n:0,m:0,s:0,v:0,l:0,rv:0,rl:0,sc:0},bad=0,nop=0;
   const rows=act.map(p=>{
-    const n=get(ui.cy,p.id,'n'),m=get(ui.cy,p.id,'m'),cur=ui.mode==='n'?n:m;
-    if(n!==undefined)tn+=n;if(m!==undefined)tm+=m;
+    const r=calc(ui.cy,p),cur=r[ui.mode];
+    if(r.n!==undefined)T.n+=r.n;if(r.m!==undefined)T.m+=r.m;
     let tag='';
-    if(n!==undefined&&m!==undefined){const d=n-m;if(d<0){bad++;tag='<span class="tag bad">conferir</span>'}else{ts+=d;tag='<span class="tag ok">saiu '+d+'</span>'}}
-    const info=(n!==undefined?'Noite '+n:'Noite –')+' · '+(m!==undefined?'Manhã '+m:'Manhã –');
-    return '<div class="row"><div class="nm">'+esc(p.name)+'<small>'+info+tag+'</small></div><div class="st"><button data-a="dec" data-id="'+p.id+'" aria-label="menos">−</button><input type="number" inputmode="numeric" min="0" placeholder="–" data-a="inp" data-id="'+p.id+'" value="'+(cur===undefined?'':cur)+'"><button data-a="inc" data-id="'+p.id+'" aria-label="mais">+</button></div></div>';
+    if(r.d!==undefined){
+      if(r.d<0||r.l<0){bad++;tag='<span class="tag bad">conferir</span>'}
+      else{T.s+=r.d;T.sc+=r.d*pr(p);tag='<span class="tag ok">saiu '+r.d+'</span>';
+        if(r.l!==undefined){T.v+=r.v;T.l+=r.l;T.rv+=r.v*pr(p);T.rl+=r.l*pr(p);if(!p.price)nop++;
+          tag+=r.l>0?'<span class="tag bad">perda '+r.l+'</span>':'<span class="tag ok">sem perda</span>'}}
+    }
+    return '<div class="row"><div class="nm">'+esc(p.name)+'<small>Noite '+f(r.n)+' · Manhã '+f(r.m)+' · Vendido '+f(r.v)+(p.price?' · '+money(p.price):' · sem preço')+tag+'</small></div><div class="st"><button data-a="dec" data-id="'+p.id+'" aria-label="menos">−</button><input type="number" inputmode="numeric" min="0" placeholder="–" data-a="inp" data-id="'+p.id+'" value="'+(cur===undefined?'':cur)+'"><button data-a="inc" data-id="'+p.id+'" aria-label="mais">+</button></div></div>';
   }).join('');
-  return '<div class="card"><label for="cy">Contagem da noite de</label><input type="date" id="cy" value="'+ui.cy+'"><div class="seg"><button data-a="mode" data-m="n" class="'+(ui.mode==='n'?'on':'')+'">🌙 Noite (ao sair)</button><button data-a="mode" data-m="m" class="'+(ui.mode==='m'?'on':'')+'">☀️ Manhã (ao chegar)</button></div></div>'
-   +'<div class="card sum"><div><b>'+tn+'</b><span>Noite</span></div><div><b>'+tm+'</b><span>Manhã</span></div><div><b>'+ts+'</b><span>Saiu</span></div></div>'
-   +(bad?'<div class="card" style="color:var(--bad)">'+bad+' produto(s) com manhã maior que noite: confira a contagem.</div>':'')
+  const rp=S.rep[ui.cy],df=rp===undefined?undefined:rp-T.sc,okd=df!==undefined&&Math.abs(df)<0.005;
+  let st='';
+  if(df!==undefined)st=okd?'<div class="tag ok" style="display:block;margin:10px 0 0;padding:8px">Bateu: contagem e relatório estão iguais ✔</div>':'<div class="tag bad" style="display:block;margin:10px 0 0;padding:8px">'+(df<0?'O relatório está '+money(-df)+' a menos que a contagem: saiu produto sem venda registrada.':'O relatório está '+money(df)+' a mais que a contagem: confira a contagem e os preços.')+'</div>';
+  const conf='<div class="card"><b>Conferência com o relatório</b><p class="sub" style="margin:4px 0 8px">Venda pela contagem = saiu × preço de venda.</p><div class="sum"><div><b>'+money(T.sc)+'</b><span>Pela contagem</span></div><div><b>'+(rp===undefined?'–':money(rp))+'</b><span>Relatório</span></div><div><b style="color:'+(df===undefined?'var(--tx)':okd?'var(--ok)':'var(--bad)')+'">'+(df===undefined?'–':money(df))+'</b><span>Diferença</span></div></div><label for="rep" style="margin-top:10px">Venda do relatório (R$)</label><input type="text" inputmode="decimal" id="rep" placeholder="0,00" value="'+(rp===undefined?'':String(rp).replace('.',','))+'">'+st+'</div>';
+  const M=[['n','🌙 Noite'],['m','☀️ Manhã'],['v','🧾 Vendido']];
+  return '<div class="card"><label for="cy">Contagem da noite de</label><input type="date" id="cy" value="'+ui.cy+'"><div class="seg">'+M.map(x=>'<button data-a="mode" data-m="'+x[0]+'" class="'+(ui.mode===x[0]?'on':'')+'">'+x[1]+'</button>').join('')+'</div><p class="sub" style="margin:8px 0 0">'+HINT[ui.mode]+'</p></div>'
+   +'<div class="card"><div class="sum"><div><b>'+T.n+'</b><span>Noite</span></div><div><b>'+T.m+'</b><span>Manhã</span></div><div><b>'+T.s+'</b><span>Saiu</span></div></div>'
+   +'<div class="sum" style="margin-top:8px"><div><b>'+T.v+'</b><span>Vendido (un)</span></div><div><b>'+T.l+'</b><span>Perda (un)</span></div></div>'
+   +'<div class="sum" style="margin-top:8px"><div><b>'+money(T.rv)+'</b><span>Vendido (R$)</span></div><div><b style="color:var(--bad)">'+money(T.rl)+'</b><span>Perda (R$)</span></div></div></div>'
+   +conf
+   +(bad?'<div class="card" style="color:var(--bad)">'+bad+' produto(s) para conferir: manhã maior que noite, ou vendido maior que o que saiu.</div>':'')
+   +(nop?'<div class="card sub">'+nop+' produto(s) sem preço: cadastre na aba Produtos para valorizar.</div>':'')
    +'<div class="card">'+(rows||'<div class="empty">Nenhum produto. Cadastre na aba Produtos.</div>')+'</div>';
 }
 
 function cycles(){return Object.keys(S.days).filter(c=>Object.values(S.days[c]).some(o=>Object.keys(o).length)).sort().reverse()}
 function vHist(){
   const cs=cycles();if(!cs.length)return '<div class="card empty">Ainda não há contagens. Comece pela aba Contagem.</div>';
-  const agg={};
+  const agg={},G={s:0,v:0,l:0,rv:0,rl:0,sc:0,rp:0,dc:0};
   const list=cs.map(c=>{
-    let tot=0;const rows=S.products.map(p=>{
-      const n=get(c,p.id,'n'),m=get(c,p.id,'m');if(n===undefined&&m===undefined)return '';
-      let s='–';if(n!==undefined&&m!==undefined){const d=n-m;s=d<0?'conferir':d;if(d>=0){tot+=d;const a=agg[p.id]=agg[p.id]||{t:0,d:0};a.t+=d;a.d++}}
-      return '<tr><td>'+esc(p.name)+'</td><td>'+(n===undefined?'–':n)+'</td><td>'+(m===undefined?'–':m)+'</td><td><b>'+s+'</b></td></tr>';
+    let ts=0,tv=0,tl=0,rv=0,rl=0,sc=0;
+    const rows=S.products.map(p=>{
+      const r=calc(c,p);if(r.n===undefined&&r.m===undefined&&r.v===undefined)return '';
+      let sd='–',pd='–';
+      if(r.d!==undefined){
+        if(r.d<0||r.l<0){sd=r.d<0?'conferir':r.d;pd=r.l<0?'conferir':'–'}
+        else{sd=r.d;ts+=r.d;sc+=r.d*pr(p);const a=agg[p.id]=agg[p.id]||{s:0,v:0,l:0,rv:0,rl:0};a.s+=r.d;
+          if(r.l!==undefined){pd=r.l;tv+=r.v;tl+=r.l;rv+=r.v*pr(p);rl+=r.l*pr(p);a.v+=r.v;a.l+=r.l;a.rv+=r.v*pr(p);a.rl+=r.l*pr(p)}}
+      }
+      return '<tr><td>'+esc(p.name)+'</td><td>'+f(r.n)+'</td><td>'+f(r.m)+'</td><td><b>'+sd+'</b></td><td>'+f(r.v)+'</td><td><b>'+pd+'</b></td></tr>';
     }).join('');
-    return '<details><summary>'+lab(c)+' · saiu '+tot+'</summary><table><tr><th>Produto</th><th>Noite</th><th>Manhã</th><th>Saiu</th></tr>'+rows+'</table></details>';
+    if(S.rep[c]!==undefined){G.sc+=sc;G.rp+=S.rep[c];G.dc++}
+    G.s+=ts;G.v+=tv;G.l+=tl;G.rv+=rv;G.rl+=rl;
+    return '<details><summary>'+lab(c)+' · contagem '+money(sc)+(S.rep[c]!==undefined?' · relatório '+money(S.rep[c])+' · dif '+money(S.rep[c]-sc):'')+' · perda '+money(rl)+'</summary><div style="overflow-x:auto"><table><tr><th>Produto</th><th>Noite</th><th>Manhã</th><th>Saiu</th><th>Vend.</th><th>Perda</th></tr>'+rows+'</table></div></details>';
   }).join('');
-  const res=S.products.filter(p=>agg[p.id]).sort((a,b)=>agg[b.id].t-agg[a.id].t).map(p=>'<tr><td>'+esc(p.name)+'</td><td>'+agg[p.id].d+'</td><td><b>'+agg[p.id].t+'</b></td><td>'+(agg[p.id].t/agg[p.id].d).toFixed(1).replace('.',',')+'</td></tr>').join('');
-  return '<div class="card"><b>Resumo por produto</b><table><tr><th>Produto</th><th>Dias</th><th>Total saiu</th><th>Média/dia</th></tr>'+(res||'<tr><td colspan="4" class="empty">Conte noite e manhã para ver o resumo.</td></tr>')+'</table></div>'
+  const res=S.products.filter(p=>agg[p.id]).sort((a,b)=>agg[b.id].rl-agg[a.id].rl||agg[b.id].l-agg[a.id].l).map(p=>{const a=agg[p.id];return '<tr><td>'+esc(p.name)+'</td><td>'+a.s+'</td><td>'+a.v+'</td><td>'+a.l+'</td><td>'+money(a.rv)+'</td><td><b>'+money(a.rl)+'</b></td></tr>'}).join('');
+  const pct=G.v+G.l>0?(G.l/(G.v+G.l)*100).toFixed(1).replace('.',',')+'%':'–';
+  return '<div class="card"><b>Total geral</b><div class="sum" style="margin-top:8px"><div><b>'+money(G.rv)+'</b><span>Vendido</span></div><div><b style="color:var(--bad)">'+money(G.rl)+'</b><span>Perda</span></div><div><b>'+pct+'</b><span>Perda sobre o total</span></div></div>'+(G.dc?'<div class="sum" style="margin-top:8px"><div><b>'+money(G.sc)+'</b><span>Contagem ('+G.dc+' dia(s) com relatório)</span></div><div><b>'+money(G.rp)+'</b><span>Relatório</span></div><div><b style="color:'+(Math.abs(G.rp-G.sc)<0.005?'var(--ok)':'var(--bad)')+'">'+money(G.rp-G.sc)+'</b><span>Diferença</span></div></div>':'')+'<p class="sub" style="margin:8px 0 0">Perda = saiu − vendido, a preço de venda. Só entram dias com noite, manhã e vendido preenchidos.</p></div>'
+   +'<div class="card"><b>Resumo por produto</b><div style="overflow-x:auto"><table><tr><th>Produto</th><th>Saiu</th><th>Vend.</th><th>Perda</th><th>R$ vend.</th><th>R$ perda</th></tr>'+(res||'<tr><td colspan="6" class="empty">Preencha noite, manhã e vendido para ver o resumo.</td></tr>')+'</table></div></div>'
    +'<div class="card"><b>Dia a dia</b>'+list+'<button class="btn alt" data-a="csv">Copiar histórico (CSV)</button></div>';
 }
 
 function vProd(){
-  const rows=S.products.filter(p=>!p.off).map(p=>'<div class="pr"><input type="text" data-a="ren" data-id="'+p.id+'" value="'+esc(p.name)+'"><button class="st del" style="height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--card)" data-a="rm" data-id="'+p.id+'">'+(ui.conf===p.id?'Tem certeza?':'Remover')+'</button></div>').join('');
-  return '<div class="card"><b>Produtos da geladeira</b><p class="sub">Toque no nome para editar. Produtos removidos continuam no histórico.</p>'+rows
-   +'<div class="pr"><input type="text" id="newp" placeholder="Novo produto"><button class="btn" style="width:auto;margin:0;padding:12px 16px" data-a="add">Adicionar</button></div></div>';
+  const rows=S.products.filter(p=>!p.off).map(p=>'<div style="padding:8px 0;border-bottom:1px solid var(--bd)"><div class="pr"><input type="text" data-a="ren" data-id="'+p.id+'" value="'+esc(p.name)+'"><button class="st del" style="height:44px;border:1px solid var(--bd);border-radius:10px;background:var(--card)" data-a="rm" data-id="'+p.id+'">'+(ui.conf===p.id?'Tem certeza?':'Remover')+'</button></div><div class="pr"><div style="flex:1"><label>Preço de venda (R$)</label><input type="text" inputmode="decimal" placeholder="0,00" data-a="price" data-id="'+p.id+'" value="'+(p.price?String(p.price).replace('.',','):'')+'"></div><div style="flex:1"><label>Custo (R$, opcional)</label><input type="text" inputmode="decimal" placeholder="0,00" data-a="cost" data-id="'+p.id+'" value="'+(p.cost?String(p.cost).replace('.',','):'')+'"></div></div></div>').join('');
+  return '<div class="card"><b>Produtos da geladeira</b><p class="sub">Toque no nome para editar. O preço de venda valoriza vendas e perdas. Produtos removidos continuam no histórico.</p>'+rows
+   +'<div class="pr" style="margin-top:8px"><input type="text" id="newp" placeholder="Novo produto"><button class="btn" style="width:auto;margin:0;padding:12px 16px" data-a="add">Adicionar</button></div></div>';
 }
 
 function render(){
-  $('#nav').innerHTML=[['c','Contagem'],['h','Histórico'],['p','Produtos']].map(t=>'<button data-a="tab" data-t="'+t[0]+'" class="'+(ui.tab===t[0]?'on':'')+'">'+t[1]+'</button>').join('');
+  $('#nav').innerHTML=[['c','Contagem'],['h','Histórico'],['p','Preços']].map(t=>'<button data-a="tab" data-t="'+t[0]+'" class="'+(ui.tab===t[0]?'on':'')+'">'+t[1]+'</button>').join('');
   $('#app').innerHTML=ui.tab==='c'?vCount():ui.tab==='h'?vHist():vProd();
 }
 function csv(){
-  const L=['data_da_noite;produto;noite;manhã;saiu'];
-  cycles().slice().reverse().forEach(c=>S.products.forEach(p=>{const n=get(c,p.id,'n'),m=get(c,p.id,'m');if(n===undefined&&m===undefined)return;L.push([c,p.name,n??'',m??'',(n!==undefined&&m!==undefined)?n-m:''].join(';'))}));
+  const L=['data_da_noite;produto;noite;manhã;saiu;vendido;perda;preco_venda;valor_vendido;valor_perda'];
+  cycles().slice().reverse().forEach(c=>S.products.forEach(p=>{const r=calc(c,p);if(r.n===undefined&&r.m===undefined&&r.v===undefined)return;
+    const x=n=>n===undefined?'':n,ok=r.l!==undefined&&r.l>=0;
+    L.push([c,p.name,x(r.n),x(r.m),x(r.d),x(r.v),x(r.l),p.price||'',ok?(r.v*pr(p)).toFixed(2):'',ok?(r.l*pr(p)).toFixed(2):''].join(';'))}));
   return L.join('\n');
 }
 function copy(t){
@@ -149,7 +182,9 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   const t=e.target,a=t.dataset.a;
   if(t.id==='cy'){if(t.value){ui.cy=t.value;render()}}
+  else if(t.id==='rep'){const n=parseFloat(t.value.replace(',','.'));if(n>=0)S.rep[ui.cy]=Math.round(n*100)/100;else delete S.rep[ui.cy];save();render()}
   else if(a==='inp'){const v=t.value.trim();set(ui.cy,t.dataset.id,ui.mode,v===''?undefined:Math.max(0,Math.floor(+v)||0));render()}
+  else if(a==='price'||a==='cost'){const p=S.products.find(x=>x.id===t.dataset.id),n=parseFloat(t.value.replace(',','.'));if(p){if(n>0)p[a]=Math.round(n*100)/100;else delete p[a];save();t.value=p[a]?String(p[a]).replace('.',','):''}}
   else if(a==='ren'){const p=S.products.find(x=>x.id===t.dataset.id),v=t.value.trim();if(p&&v){p.name=v;save()}else if(p)t.value=p.name}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='newp')addProd()});

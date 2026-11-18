@@ -2,13 +2,14 @@
 
 Aplicativo web simples para controlar os produtos que ficam na geladeira expositora durante a noite.
 
-Antes de ir embora você conta o que tem (**noite**). Ao chegar de manhã você conta de novo (**manhã**). O app mostra a **diferença**, ou seja, o que saiu. Só quantidades, sem valores em dinheiro.
+Antes de ir embora você conta o que tem (**noite**). Ao chegar de manhã você conta de novo (**manhã**). O app mostra a **diferença**, ou seja, o que saiu. Com o preço de cada item, ele compara **venda** e **perda**.
 
 ## Funcionalidades
 
-- **Contagem**: escolha 🌙 Noite ou ☀️ Manhã e use **+** e **−** (ou digite) em cada produto. Mostra o total da noite, da manhã e do que saiu. Se a manhã for maior que a noite, o produto fica marcado como "conferir".
-- **Histórico**: dia a dia, mais um resumo por produto (total que saiu e média por dia). Botão para copiar tudo em CSV.
-- **Produtos**: adicionar, renomear e remover produtos. Os removidos continuam no histórico.
+- **Contagem**: escolha 🌙 Noite, ☀️ Manhã ou 🧾 Vendido e use **+** e **−** (ou digite) em cada produto. **Saiu** = noite − manhã. **Perda** = saiu − vendido. Mostra tudo em unidades e em R$. Se a manhã for maior que a noite, ou o vendido maior que o que saiu, o produto fica marcado como "conferir".
+- **Conferência com o relatório**: a venda pela contagem (saiu × preço) é comparada com o valor que você lança do relatório, e o app diz se bateu ou qual é a diferença.
+- **Histórico**: dia a dia, total geral de venda e perda em R$, e resumo por produto. Botão para copiar tudo em CSV.
+- **Preços**: adicionar, renomear e remover produtos, com preço de venda e custo (opcional). A perda é valorizada pelo preço de venda. Os removidos continuam no histórico.
 - Funciona **sem internet** e pode ser instalado na tela inicial do celular (PWA).
 - Tema claro e escuro automáticos.
 

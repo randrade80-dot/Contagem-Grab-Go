@@ -1,5 +1,5 @@
 // Service worker simples: guarda os arquivos do app para funcionar sem internet.
-const CACHE = 'geladeira-v1';
+const CACHE = 'geladeira-v3';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg'];
 
 self.addEventListener('install', e => {
